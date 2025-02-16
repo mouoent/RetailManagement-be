@@ -1,0 +1,905 @@
+﻿{
+  "info": {
+    "_postman_id": "8f00ff7f-1a02-4295-8342-6cc6cea34de2",
+    "name": "RetailManagement",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "10995016",
+    "_collection_link": "https://myteam-6379.postman.co/workspace/RetailManagement~1ccebd69-bb8e-4ba1-9731-fa6f84bf1545/collection/10995016-8f00ff7f-1a02-4295-8342-6cc6cea34de2?action=share&source=collection_link&creator=10995016"
+  },
+  "item": [
+    {
+      "name": "Get Products",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{url}}{{productsEndpoint}}",
+          "host": [
+            "{{url}}{{productsEndpoint}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add Product",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Test if status is 201 Created\r",
+              "pm.test(\"Status code is 201 Created\", function () {\r",
+              "    pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "// Test that location header contains an ID\r",
+              "var locationHeader = pm.response.headers.get(\"Location\");\r",
+              "pm.test(\"Response contains Location header with ID\", function () {    \r",
+              "    pm.expect(locationHeader).to.include(\"/\"); // Ensure the location header has an ID\r",
+              "});\r",
+              "\r",
+              "// Extract the product ID from the Location header\r",
+              "var productId = locationHeader ? locationHeader.split(\"/\").pop() : null;\r",
+              "\r",
+              "// Ensure product ID was properly extracted\r",
+              "pm.test(\"Extracted Product ID is valid\", function () {\r",
+              "    pm.expect(productId).to.be.a(\"string\").and.not.be.empty;\r",
+              "});\r",
+              "\r",
+              "// If we successfully extracted the ID, make a GET request to validate it exists\r",
+              "if (productId) {\r",
+              "    let url = pm.variables.get(\"url\") + pm.variables.get(\"productsEndpoint\") + \"/\" + productId;    \r",
+              "\r",
+              "    pm.sendRequest({\r",
+              "        url: url,\r",
+              "        method: \"GET\"\r",
+              "    }, function (err, res) {        \r",
+              "\r",
+              "        pm.test(\"Successfully fetched created product\", function () {\r",
+              "            pm.expect(err).to.be.null;\r",
+              "            pm.expect(res).to.have.property(\"code\", 200);\r",
+              "        });\r",
+              "\r",
+              "        let product = res.json();\r",
+              "        pm.test(\"Product exists with correct ID\", function () {\r",
+              "            pm.expect(product).to.have.property(\"id\", parseInt(productId, 10));\r",
+              "        });\r",
+              "    });\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "\r",
+              "let prefix = pm.collectionVariables.get(\"testProductPrefix\");\r",
+              "\r",
+              "let randomProductName = prefix + Math.floor(Math.random() * 1000); \r",
+              "let randomPrice = (Math.random() * 99 + 1).toFixed(2);\r",
+              "\r",
+              "// Store in variables for the request\r",
+              "pm.collectionVariables.set(\"testProductName\", randomProductName);\r",
+              "pm.collectionVariables.set(\"testProductPrice\", randomPrice);\r",
+              "\r",
+              "console.log(\"Generated Product Name:\", randomProductName);\r",
+              "console.log(\"Generated Price:\", randomPrice);\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\": \"{{testProductName}}\",\r\n    \"price\": {{testProductPrice}}\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{url}}{{productsEndpoint}}",
+          "host": [
+            "{{url}}{{productsEndpoint}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Product",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"API responded with 200 OK\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "// Step 1: Get the test product ID\r",
+              "let productId = pm.collectionVariables.get(\"testProductId\");\r",
+              "let updatedPrice = pm.collectionVariables.get(\"testProductPrice\");\r",
+              "\r",
+              "\r",
+              "if (!productId) {\r",
+              "    console.log(\"No TestProductId found. Skipping validation.\");\r",
+              "\r",
+              "    pm.test(\"Product ID is available\", function () {\r",
+              "        pm.expect(productId, \"TestProductId is missing\").to.not.be.undefined;\r",
+              "    });\r",
+              "\r",
+              "    return;\r",
+              "}\r",
+              "\r",
+              "// Step 2: Make a GET request to fetch all products\r",
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"productsEndpoint\") + \"/\" + productId,\r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    \r",
+              "    if (err) {\r",
+              "        console.log(\"Error fetching product:\", err);\r",
+              "\r",
+              "        pm.test(\"Successfully fetched product\", function () {\r",
+              "            pm.expect(err, \"Error fetching product: \" + err).to.be.null;        \r",
+              "        });\r",
+              "\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    let product = res.json();    \r",
+              "\r",
+              "    \r",
+              "    // Check if product exists\r",
+              "    if (!product) {\r",
+              "        console.log(`Product with ID ${productId} not found.`);\r",
+              "\r",
+              "        pm.test(`Product with ID ${productId} exists`, function () {\r",
+              "            pm.expect(product, `Product with ID ${productId} not found`).to.not.be.undefined;\r",
+              "        });\r",
+              "\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    // Step 3: Validate the updates\r",
+              "    pm.test(\"Product price was updated\", function () {\r",
+              "        pm.expect(product.price).to.eql(parseFloat(updatedPrice));\r",
+              "    });\r",
+              "\r",
+              "    console.log(\"Product update verified:\", product);\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"productsEndpoint\"),  \r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    if (err) {\r",
+              "        console.error(\"Error fetching products:\", err);\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    let products = res.json();    \r",
+              "\r",
+              "    // Filter products with the \"TestProduct-\" prefix to avoid interfering with real data\r",
+              "    let prefix = pm.collectionVariables.get(\"testProductPrefix\");\r",
+              "    let testProducts = products.filter(p => p.name.startsWith(prefix));\r",
+              "\r",
+              "    if (testProducts.length > 0) {\r",
+              "        let randomProduct = testProducts[Math.floor(Math.random() * testProducts.length)];\r",
+              "        pm.collectionVariables.set(\"testProductId\", randomProduct.id);\r",
+              "        console.log(\"Selected Product ID:\", randomProduct.id);\r",
+              "\r",
+              "        let randomPrice = (Math.random() * 99 + 1).toFixed(2);\r",
+              "        console.log(\"Updating with price: \" + randomPrice);\r",
+              "\r",
+              "        pm.collectionVariables.set(\"testProductPrice\", randomPrice);\r",
+              "\r",
+              "    } else {\r",
+              "        console.warn(\"No TestProduct found! Consider adding a test product first.\");\r",
+              "    }\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"id\": {{testProductId}},\r\n    \"name\": \"\", \r\n    \"price\": {{testProductPrice}} // Just change the price\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{url}}{{productsEndpoint}}",
+          "host": [
+            "{{url}}{{productsEndpoint}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Product",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"productsEndpoint\"),  \r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    if (err) {\r",
+              "        console.error(\"Error fetching products:\", err);\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    let products = res.json();    \r",
+              "\r",
+              "    // Filter products with the \"TestProduct-\" prefix to avoid interfering with real data\r",
+              "    let prefix = pm.collectionVariables.get(\"testProductPrefix\");\r",
+              "    let testProducts = products.filter(p => p.name.startsWith(prefix));\r",
+              "\r",
+              "    if (testProducts.length > 0) {\r",
+              "        let randomProduct = testProducts[Math.floor(Math.random() * testProducts.length)];\r",
+              "        pm.collectionVariables.set(\"testProductId\", randomProduct.id);\r",
+              "        console.log(\"Deleting Product with ID:\", randomProduct.id);\r",
+              "    } else {\r",
+              "        console.warn(\"No TestProduct found! Consider adding a test product first.\");\r",
+              "    }\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Step 1: Ensure the request was successful\r",
+              "pm.test(\"API responded with 204 NoContent\", function () {\r",
+              "    pm.expect(pm.response.code).to.eql(204); \r",
+              "});\r",
+              "\r",
+              "// Step 2: Fetch the product by ID to confirm deletion\r",
+              "let productId = pm.variables.get(\"testProductId\"); \r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"productsEndpoint\") + \"/\" + productId,\r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    \r",
+              "    // Step 3: Ensure the product is gone\r",
+              "    pm.test(\"Deleted product should not be found\", function () {        \r",
+              "        pm.expect(res.code).to.eql(404); // Expecting Not Found\r",
+              "    });\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{url}}{{productsEndpoint}}/{{testProductId}}",
+          "host": [
+            "{{url}}{{productsEndpoint}}"
+          ],
+          "path": [
+            "{{testProductId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Customers",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{url}}{{customersEndpoint}}",
+          "host": [
+            "{{url}}{{customersEndpoint}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add Customer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {\r",
+              "    pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "var locationHeader = pm.response.headers.get(\"Location\");\r",
+              "pm.test(\"Response contains Location header with ID\", function () {\r",
+              "    pm.expect(locationHeader).to.include(\"/\"); // Ensure the location header has an ID\r",
+              "});\r",
+              "\r",
+              "// Extract the customer ID from the Location header\r",
+              "var customerId = locationHeader ? locationHeader.split(\"/\").pop() : null;\r",
+              "\r",
+              "// Ensure customer ID was properly extracted\r",
+              "pm.test(\"Extracted Customer ID is valid\", function () {\r",
+              "    pm.expect(customerId).to.be.a(\"string\").and.not.be.empty;\r",
+              "});\r",
+              "\r",
+              "// If we successfully extracted the ID, make a GET request to validate it exists\r",
+              "if (customerId) {\r",
+              "    let url = pm.variables.get(\"url\") + pm.variables.get(\"customersEndpoint\") + \"/\" + customerId;    \r",
+              "\r",
+              "    console.log(url);\r",
+              "\r",
+              "    let testName = pm.collectionVariables.get(\"testCustomerName\");\r",
+              "    let testEmail = pm.collectionVariables.get(\"testCustomerEmail\");\r",
+              "\r",
+              "    pm.sendRequest({\r",
+              "        url: url,\r",
+              "        method: \"GET\"\r",
+              "    }, function (err, res) {                \r",
+              "\r",
+              "        pm.test(\"Successfully fetched created customer\", function () {\r",
+              "            pm.expect(err).to.be.null;\r",
+              "            pm.expect(res).to.have.property(\"code\", 200);\r",
+              "        });\r",
+              "\r",
+              "        // Check created customer exists\r",
+              "        let customer = res.json();\r",
+              "        pm.test(\"Customer exists with correct ID\", function () {\r",
+              "            pm.expect(customer).to.have.property(\"id\", parseInt(customerId, 10));\r",
+              "        });\r",
+              "\r",
+              "        // Check if customer has correct name\r",
+              "        pm.test(\"Customer exists with correct name\", function () {\r",
+              "            pm.expect(customer).to.have.property(\"name\", testName);\r",
+              "        });\r",
+              "        \r",
+              "        // Check if customer has correct email\r",
+              "        pm.test(\"Customer exists with correct email\", function () {\r",
+              "            pm.expect(customer).to.have.property(\"email\", testEmail);\r",
+              "        });\r",
+              "    });\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "\r",
+              "let prefix = pm.collectionVariables.get(\"testCustomerPrefix\");\r",
+              "\r",
+              "let emailDomains = ['@gmail.com', '@hotmail.com', '@yahoo.com'];\r",
+              "\r",
+              "let randomCustomerName = prefix + Math.floor(Math.random() * 1000); \r",
+              "\r",
+              "let randomEmailDomain = emailDomains[Math.floor(Math.random() * emailDomains.length)];\r",
+              "let randomEmail = randomCustomerName + Math.floor(Math.random() * 1000) + randomEmailDomain; \r",
+              "\r",
+              "console.log(randomEmail);\r",
+              "\r",
+              "// Store in variables for the request\r",
+              "pm.collectionVariables.set(\"testCustomerName\", randomCustomerName);\r",
+              "pm.collectionVariables.set(\"testCustomerEmail\", randomEmail);\r",
+              "\r",
+              "console.log(\"Generated Customer Name:\", randomCustomerName);\r",
+              "console.log(\"Generated Email:\", randomEmail);\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\" : \"{{testCustomerName}}\",\r\n    \"email\" : \"{{testCustomerEmail}}\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{url}}{{customersEndpoint}}",
+          "host": [
+            "{{url}}{{customersEndpoint}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Customer",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"customersEndpoint\"),  \r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    if (err) {\r",
+              "        console.error(\"Error fetching customers:\", err);\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    let customers = res.json();    \r",
+              "\r",
+              "    // Filter customers with the \"TestCustomer-\" prefix to avoid interfering with real data\r",
+              "    let prefix = pm.collectionVariables.get(\"testCustomerPrefix\");\r",
+              "    let testCustomers = customers.filter(p => p.name.startsWith(prefix));\r",
+              "\r",
+              "    if (testCustomers.length > 0) {\r",
+              "        let randomCustomer = testCustomers[Math.floor(Math.random() * testCustomers.length)];\r",
+              "        pm.collectionVariables.set(\"testCustomerId\", randomCustomer.id);\r",
+              "        console.log(\"Selected Customer ID:\", randomCustomer.id);\r",
+              "\r",
+              "        let randomEmail =  \"updatedEmail@gmail.com\";        \r",
+              "        pm.collectionVariables.set(\"testCustomerEmail\", randomEmail);\r",
+              "        console.log(\"Updating with email: \" + randomEmail);\r",
+              "\r",
+              "    } else {\r",
+              "        console.warn(\"No TestCustomer found! Consider adding a test customer first.\");\r",
+              "    }\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"API responded with 200 OK\", function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "// Step 1: Get the test Customer ID\r",
+              "let customerId = pm.collectionVariables.get(\"testCustomerId\");\r",
+              "let updatedEmail = pm.collectionVariables.get(\"testCustomerEmail\");\r",
+              "\r",
+              "\r",
+              "if (!customerId) {\r",
+              "    console.log(\"❌ No TestCustomerId found. Skipping validation.\");\r",
+              "\r",
+              "    pm.test(\"Customer ID is available\", function () {\r",
+              "        pm.expect(customerId, \"TestCustomerId is missing\").to.not.be.undefined;\r",
+              "    });\r",
+              "\r",
+              "    return;\r",
+              "}\r",
+              "\r",
+              "// Step 2: Make a GET request to fetch all Customers\r",
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"customersEndpoint\") + \"/\" + customerId,\r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    \r",
+              "    if (err) {\r",
+              "        console.log(\"Error fetching customer:\", err);\r",
+              "\r",
+              "        pm.test(\"Successfully fetched Customer\", function () {\r",
+              "            pm.expect(err, \"Error fetching Customer: \" + err).to.be.null;        \r",
+              "        });\r",
+              "\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    let customer = res.json();    \r",
+              "\r",
+              "    \r",
+              "    // Check if Customer exists\r",
+              "    if (!customer) {\r",
+              "        console.log(`❌ Customer with ID ${customer} not found.`);\r",
+              "\r",
+              "        pm.test(`Customer with ID ${customerId} exists`, function () {\r",
+              "            pm.expect(customer, `Customer with ID ${customerId} not found`).to.not.be.undefined;\r",
+              "        });\r",
+              "\r",
+              "        return;\r",
+              "    }    \r",
+              "\r",
+              "    // Step 3: Validate the updates\r",
+              "    pm.test(\"Customer email was updated\", function () {\r",
+              "        pm.expect(customer.email).to.eql(updatedEmail);\r",
+              "    });\r",
+              "\r",
+              "    console.log(\"Customer update verified:\", customer);\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"id\": {{testCustomerId}},\r\n    \"name\": \"\", \r\n    \"email\": \"{{testCustomerEmail}}\" // Just change the email\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{url}}{{customersEndpoint}}",
+          "host": [
+            "{{url}}{{customersEndpoint}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Customer",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"customersEndpoint\"),  \r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    if (err) {\r",
+              "        console.error(\"Error fetching customers:\", err);\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    let customers = res.json();    \r",
+              "\r",
+              "    // Filter customers with the \"TestCustomer-\" prefix to avoid interfering with real data\r",
+              "    let prefix = pm.collectionVariables.get(\"testCustomerPrefix\");\r",
+              "    let testCustomers = customers.filter(p => p.name.startsWith(prefix));\r",
+              "\r",
+              "    if (testCustomers.length > 0) {\r",
+              "        let randomCustomer = testCustomers[Math.floor(Math.random() * testCustomers.length)];\r",
+              "        pm.collectionVariables.set(\"testCustomerId\", randomCustomer.id);\r",
+              "        console.log(\"Deleting Customer with ID:\", randomCustomer.id);\r",
+              "    } else {\r",
+              "        console.warn(\"No TestCustomer found! Consider adding a test customer first.\");\r",
+              "    }\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Step 1: Ensure the request was successful\r",
+              "pm.test(\"API responded with 204 NoContent\", function () {\r",
+              "    pm.expect(pm.response.code).to.eql(204); \r",
+              "});\r",
+              "\r",
+              "// Step 2: Fetch the Customer by ID to confirm deletion\r",
+              "let customerId = pm.variables.get(\"testCustomerId\"); \r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"customersEndpoint\") + \"/\" + customerId,\r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "    \r",
+              "    // Step 3: Ensure the Customer is gone\r",
+              "    pm.test(\"Deleted customer should not be found\", function () {        \r",
+              "        pm.expect(res.code).to.eql(404); // Expecting Not Found\r",
+              "    });\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{url}}{{customersEndpoint}}/{{testCustomerId}}",
+          "host": [
+            "{{url}}{{customersEndpoint}}"
+          ],
+          "path": [
+            "{{testCustomerId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Add Purchase",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Step 1: Fetch Customers First\r",
+              "pm.sendRequest({\r",
+              "    url: pm.environment.get(\"url\") + pm.environment.get(\"customersEndpoint\"),\r",
+              "    method: \"GET\"\r",
+              "}, function (err, res) {\r",
+              "\r",
+              "    if(err){\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    let customers = res.json();    \r",
+              "    \r",
+              "    let testCustomers = customers.filter(c => c.name.startsWith(\"TestCustomer-\"));\r",
+              "    if (testCustomers.length === 0) {\r",
+              "        console.log(\"No test customers found.\");\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    console.log(\"Customers: \", testCustomers);\r",
+              "\r",
+              "    let randomCustomer = testCustomers[Math.floor(Math.random() * testCustomers.length)];\r",
+              "    pm.collectionVariables.set(\"testCustomerId\", randomCustomer.id);\r",
+              "    console.log(\"Selected Customer ID:\", randomCustomer.id);\r",
+              "\r",
+              "    // Step 2: Fetch Products AFTER Customers\r",
+              "    fetchProducts();\r",
+              "});\r",
+              "\r",
+              "// Function to Fetch Products AFTER Customers are Set\r",
+              "function fetchProducts() {\r",
+              "    pm.sendRequest({\r",
+              "        url: pm.environment.get(\"url\") + pm.environment.get(\"productsEndpoint\"),\r",
+              "        method: \"GET\"\r",
+              "    }, function (err, res) {      \r",
+              "        if(err){\r",
+              "           return;\r",
+              "        }  \r",
+              "\r",
+              "        let products = res.json();\r",
+              "\r",
+              "        let testProducts = products.filter(p => p.name.startsWith(\"TestProduct-\"));\r",
+              "        if (testProducts.length === 0) {\r",
+              "            console.log(\"No test products found.\");\r",
+              "            return;\r",
+              "        }\r",
+              "\r",
+              "        // Pick 2-3 random products\r",
+              "        let selectedProducts = testProducts\r",
+              "            .sort(() => 0.5 - Math.random()) // Shuffle array\r",
+              "            .slice(0, Math.min(3, testProducts.length)); // Pick up to 3 products\r",
+              "\r",
+              "        // Randomly duplicate some products to simulate multiple quantities\r",
+              "        let productIds = [];\r",
+              "        selectedProducts.forEach(product => {\r",
+              "            let quantity = Math.floor(Math.random() * 3) + 1; // Random quantity (1 to 3)\r",
+              "            for (let i = 0; i < quantity; i++) {\r",
+              "                productIds.push(product.id); // Add the product multiple times\r",
+              "            }\r",
+              "        });\r",
+              "        pm.collectionVariables.set(\"testProductIds\", JSON.stringify(productIds));\r",
+              "        console.log(\"Selected Product IDs:\", productIds);\r",
+              "    });\r",
+              "}\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"✅ Status code is 201 Created\", function () {\r",
+              "    pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "// Extract Purchase ID from response\r",
+              "let purchaseId = pm.response.json().id;\r",
+              "\r",
+              "if (!purchaseId) {\r",
+              "    pm.test(\"Purchase ID should not be null or undefined\", function () {\r",
+              "        pm.expect(purchaseId, \"Purchase ID was not found in response\").to.not.be.undefined;\r",
+              "    });\r",
+              "    return; \r",
+              "}\r",
+              "\r",
+              "pm.collectionVariables.set(\"testPurchaseId\", purchaseId);\r",
+              "console.log(\"✅ Created Purchase ID:\", purchaseId);"
+            ],
+            "type": "text/javascript",
+            "packages": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"customerId\": {{testCustomerId}},\r\n    \"productIds\": {{testProductIds}}\r\n}\r\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{url}}{{purchasesEndpoint}}",
+          "host": [
+            "{{url}}{{purchasesEndpoint}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "testProductName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testProductPrice",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testProductId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testProductPrefix",
+      "value": "TestProduct-",
+      "type": "string"
+    },
+    {
+      "key": "selectedProductIds",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testCustomerName",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testCustomerEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testCustomerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testCustomerPrefix",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testProductIds",
+      "value": ""
+    },
+    {
+      "key": "testPurchaseId",
+      "value": ""
+    }
+  ]
+}

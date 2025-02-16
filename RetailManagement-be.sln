@@ -11,10 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Postman", "Postman", "{221DF954-C8E9-4A4A-A082-2CBD9A74372A}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Postman", "Postman", "{BD3910F4-C4A1-41E7-9F07-B2C2A11D8444}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\..\Downloads\RetailManagement.postman_collection.json = ..\..\..\Downloads\RetailManagement.postman_collection.json
-		..\..\..\Downloads\RetailManagement.postman_environment.json = ..\..\..\Downloads\RetailManagement.postman_environment.json
+		RetailManagement.postman_collection.json = RetailManagement.postman_collection.json
+		RetailManagement.postman_environment.json = RetailManagement.postman_environment.json
 	EndProjectSection
 EndProject
 Global
@@ -30,9 +30,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{221DF954-C8E9-4A4A-A082-2CBD9A74372A} = {82D8E310-EC63-4BC2-9FAF-60814E0DDE2E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DCDA73A3-65BB-4962-BFE6-1E4CAAB6502F}
