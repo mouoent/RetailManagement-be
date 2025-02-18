@@ -194,3 +194,23 @@ To run the tests:
 ### Modifying Test Data
 By default, test products/customers are prefixed with `"TestProduct-"` and `"TestCustomer-"`.
 To customize, edit the **Collection variables** `testProductPrefix` and `testCustomerPrefix`.
+
+### Postman API Testing Guide
+The following API endpoints are included in the RetailManagement Postman collection for end-to-end testing.
+
+#### Products API
+- **GET Get Products** -> Will fail if there are no products in the database.
+- **POST Add Product** -> Adds a product using the value stored in the `testProductPrefix` variable.
+- **PUT Update Product** -> Will fail if there is no product in the database with a name that starts with the value stored in the `testProductPrefix` variable.
+- **DELETE Delete Product** 
+	- Will fail if no product exists in the database with a name that starts with the value stored in the `testProductPrefix` variable.
+	- Will also fail if a product with that prefix in its name exists but is linked to a `PurchaseProduct` (the purchase must be removed first).
+
+#### Customers API
+- **GET Get Customers** -> Will fail if there are no customers in the database.
+- **POST Add Customer** -> Adds a customer using the value stored in the `testCustomerPrefix` variable.
+- **PUT Update Customer** -> Will fail if there is no customer in the database with a name that starts with the value stored in the `testCustomerPrefix` variable.
+- **DELETE Delete Customer** -> Will fail if no customer exists in the database with a name that starts with the value stored in the `testCustomerPrefix` variable.	
+
+#### Purchase API
+- **POST Add Purchase** → Adds a purchase entry linking a product and a customer which both of their names begin with their respective prefix variables. Will fail if at least one record for both does not exist,
